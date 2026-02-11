@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gourmet Map</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Gourmet Map</h1>
+            <div id="auth-section">
+                <div id="auth-controls"></div>
+            </div>
+        </header>
+
+        <div id="main-content">
+            <div id="sidebar">
+                <div id="filters">
+                    <label for="spot-type">I'm looking for:</label>
+                    <select id="spot-type">
+                        <option value="restaurant">Restaurants</option>
+                        <option value="cafe">Cafes</option>
+                        <option value="bar">Bars</option>
+                    </select>
+                    <input type="text" id="cuisine" placeholder="Cuisine (e.g., Nigerian, Italian)">
+                    <button id="search-btn">Find Spots Nearby</button>
+                </div>
+
+                <div id="place-details-container">
+                    <h3>Spotlight</h3>
+                    <div id="place-details">
+                        <p class="placeholder-text">Click a marker on the map to see details.</p>
+                    </div>
+                </div>
+
+                <div id="favourites-tab">
+                    <h3>My Favourites ❤️</h3>
+                    <ul id="favourites-list"></ul>
+                </div>
+            </div>
+            
+            <div id="map"></div>
+        </div>
+
+        <div id="auth-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                
+                <div id="login-form-container">
+                    <h2>Welcome Back</h2>
+                    <input type="text" id="login-username" placeholder="Username">
+                    <input type="password" id="login-password" placeholder="Password">
+                    <button id="submit-login">Login</button>
+                    <p>Don't have an account? <span id="go-to-reg" class="link-text">Register here</span></p>
+                </div>
+
+                <div id="register-form-container" style="display: none;">
+                    <h2>Create Account</h2>
+                    <input type="text" id="reg-username" placeholder="Username">
+                    <input type="email" id="reg-email" placeholder="Email">
+                    <input type="password" id="reg-password" placeholder="Password">
+                    <button id="submit-register">Sign Up</button>
+                    <p>Already have an account? <span id="go-to-login" class="link-text">Login here</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
