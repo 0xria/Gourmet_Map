@@ -28,6 +28,21 @@ async def add_fav(data: FavSchema, user: User = Depends(get_current_user), db: S
     db.commit()
     return {"status": "added"}
 
+@router.get("/")
+async def get_favourites(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    favourites = db.query(Favourite).filter(Favourite.user_id == current_user.id).all()
+    return [
+        {
+            "id": f.id,
+            "place_id": f.place_id,
+            "name": f.place_name,
+            "address": f.place_address,
+            "rating": f.place_rating,
+            "price_level": f.place_price_level
+        }
+        for f in favourites
+    ]
+
 @router.delete("/remove/{place_id}")
 async def remove_favourite(
     place_id: str,

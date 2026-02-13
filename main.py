@@ -1,36 +1,31 @@
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from app.database import engine, Base
+from app.models import User, Favourite  # Import models to create tables
 from app.api import auth, favourites
 from app import maps_services
-from app.database import engine, Base
-import jwt
-import os
-from fastapi.templating import Jinja2Templates
 
-
-# 1. Get the directory where main.py is actually located
-base_path = os.path.dirname(os.path.realpath(__file__))
-
-# 2. Join it with the 'templates' folder name
-templates_path = os.path.join(base_path, "templates")
-
-# 3. Initialize Jinja2 with the absolute path
-templates = Jinja2Templates(directory=templates_path)
-
-# Debug line: Print this to your terminal to see where it's looking
-print(f"DEBUG: Looking for templates in: {templates_path}")
-# This finds the folder where main.py actually lives
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# This creates the full path to your templates folder
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
-templates = Jinja2Templates(directory="templates")
-
-# This creates the tables in Supabase automatically
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Gourmet Map")
+app = FastAPI(title="Gourmet Map", description="Restaurant finder with Google Maps")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 app.include_router(auth.router)
 app.include_router(favourites.router)
@@ -41,5 +36,16 @@ async def home(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "google_maps_api_key": os.getenv("GOOGLE_MAPS_API_KEY"),
-        "current_user": None # We let JavaScript handle the user check now
+        "current_user": None
     })
+
+@app.get("/find-restaurants")
+async def get_restaurants(location: str, cuisine_type: str):
+    # Legacy endpoint, kept for compatibility
+    import googlemaps
+    gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
+    places_result = gmaps.places(
+        query=f"{cuisine_type} restaurants in {location}",
+        type='restaurant'
+    )
+    return places_result.get('results')

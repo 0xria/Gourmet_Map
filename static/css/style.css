@@ -1,0 +1,184 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+header {
+    background-color: rgba(32, 26, 140, 0.9); /* Transparent blue */
+    color: white;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#sidebar {
+    width: 350px;
+    background-color: rgba(255, 255, 255, 0.9); /* Frosted glass look */
+    padding: 20px;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+}
+
+#map {
+    flex: 1;
+    border-left: 2px solid white;
+}
+
+.link-text {
+    color: #007bff;
+    text-decoration: underline;
+    cursor: pointer;
+    position: relative; /* Brings it to the front of the modal layer */
+    z-index: 10;
+}
+
+.modal-content {
+    position: relative; /* Ensures child elements (links) align correctly */
+    z-index: 1001;
+}
+
+#login-form-container, #register-form-container {
+    padding: 10px;
+    min-height: 200px; /* Gives the container a consistent size */
+}
+
+.link-text:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.8);
+}
+
+.modal-content {
+    background: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 400px;
+    text-align: center;
+}
+
+.auth-button {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.auth-button:hover {
+    background: #e63939;
+}
+
+#filters {
+    margin-bottom: 20px;
+}
+
+#filters select, #filters input, #filters button {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#filters button {
+    background: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#filters button:hover {
+    background: #218838;
+}
+
+#place-details-container {
+    margin-top: 20px;
+}
+
+#place-details {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+#favourites-tab h3 {
+    margin-top: 20px;
+}
+
+#favourites-list {
+    list-style: none;
+    padding: 0;
+}
+
+#favourites-list li {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+#favourites-list li:hover {
+    background: #f8f9fa;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+form input {
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+form button {
+    padding: 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+form button:hover {
+    background: #0056b3;
+}

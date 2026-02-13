@@ -13,10 +13,15 @@ from app.models import User
 # Config
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
 
 # --- Helper Functions ---
 def get_password_hash(password):
