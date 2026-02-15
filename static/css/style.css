@@ -99,22 +99,34 @@ header {
 
 #filters {
     margin-bottom: 20px;
+    text-align: center;
 }
 
-#filters select, #filters input, #filters button {
+#filters label {
     display: block;
-    width: 100%;
     margin-bottom: 10px;
+    font-weight: bold;
+}
+
+#filters select, #filters input {
+    display: inline-block;
+    width: 45%;
+    margin: 0 5px 10px;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 
 #filters button {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
     background: #28a745;
     color: white;
     border: none;
     cursor: pointer;
+    border-radius: 4px;
 }
 
 #filters button:hover {

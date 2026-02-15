@@ -235,12 +235,33 @@ function switchToLogin() {
     loginCont.style.display = 'block';
 }
 
-function updateUI() {
+async function updateUI() {
     const authControls = document.getElementById('auth-controls');
     if (currentToken) {
-        authControls.innerHTML = `
-            <button onclick="logout()" class="auth-button">Sign Out</button>
-        `;
+        try {
+            const response = await fetch('/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${currentToken}`
+                }
+            });
+            if (response.ok) {
+                const user = await response.json();
+                authControls.innerHTML = `
+                    <span>Welcome, ${user.username}!</span>
+                    <button onclick="logout()" class="auth-button">Sign Out</button>
+                `;
+            } else {
+                // If fetch fails, just show sign out
+                authControls.innerHTML = `
+                    <button onclick="logout()" class="auth-button">Sign Out</button>
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            authControls.innerHTML = `
+                <button onclick="logout()" class="auth-button">Sign Out</button>
+            `;
+        }
     } else {
         authControls.innerHTML = `
             <button id="login-btn" class="auth-button">Login</button>

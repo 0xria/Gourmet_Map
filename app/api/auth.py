@@ -54,6 +54,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Wrong username/password")
-    
+
     token = jwt.encode({"sub": user.username, "exp": datetime.now(timezone.utc) + timedelta(hours=24)}, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
+
+@router.get("/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    return {"username": current_user.username, "email": current_user.email}
