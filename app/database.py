@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Use the PostgreSQL URI from Supabase
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Use the PostgreSQL URI from Supabase, or fallback to SQLite for local dev
+DATABASE_URL = os.getenv("DATABASE_URL") or "sqlite:///./gourmet_map.db"
 
-# Connect to Supabase
+# Connect to database
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
