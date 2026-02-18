@@ -5,6 +5,7 @@ let userPosition = null;
 let selectedPlace = null;
 
 function initMap() {
+    if (typeof google === 'undefined' || !google.maps) return;
     map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: 40.7128, lng: -74.0060 },
         zoom: 12
@@ -18,6 +19,36 @@ function initMap() {
             () => console.warn('Geolocation denied or unavailable')
         );
     }
+    setupApp();
+}
+
+function setupApp() {
+    updateUI();
+    if (currentToken) loadFavourites();
+
+    const modal = document.getElementById('auth-modal');
+    const loginView = document.getElementById('login-form-container');
+    const regView = document.getElementById('register-form-container');
+
+    if (modal && loginView && regView) {
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        if (loginBtn) loginBtn.onclick = () => { modal.style.display = 'block'; loginView.style.display = 'block'; regView.style.display = 'none'; };
+        if (registerBtn) registerBtn.onclick = () => { modal.style.display = 'block'; loginView.style.display = 'none'; regView.style.display = 'block'; };
+        const goToReg = document.getElementById('go-to-reg');
+        const goToLogin = document.getElementById('go-to-login');
+        if (goToReg) goToReg.onclick = () => { loginView.style.display = 'none'; regView.style.display = 'block'; };
+        if (goToLogin) goToLogin.onclick = () => { regView.style.display = 'none'; loginView.style.display = 'block'; };
+        const closeBtn = document.querySelector('.close-modal');
+        if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; };
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        if (loginForm) loginForm.onsubmit = (e) => { e.preventDefault(); login(document.getElementById('login-username').value, document.getElementById('login-password').value); };
+        if (registerForm) registerForm.onsubmit = (e) => { e.preventDefault(); register(document.getElementById('reg-username').value, document.getElementById('reg-email').value, document.getElementById('reg-password').value); };
+    }
+
+    const searchBtn = document.getElementById('search-btn');
+    if (searchBtn) searchBtn.onclick = searchNearby;
 }
 
 async function apiFetch(url, options = {}) {
@@ -67,6 +98,7 @@ function logout() {
 
 async function updateUI() {
     const authControls = document.getElementById('auth-controls');
+    if (!authControls) return;
     if (currentToken) {
         const res = await apiFetch('/auth/me');
         if (res.ok) {
@@ -77,32 +109,7 @@ async function updateUI() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initMap();
-    updateUI();
-    if (currentToken) loadFavourites();
-
-    // Modal Control Logic
-    const modal = document.getElementById('auth-modal');
-    const loginView = document.getElementById('login-form-container');
-    const regView = document.getElementById('register-form-container');
-
-    document.getElementById('login-btn').onclick = () => { modal.style.display = 'block'; loginView.style.display = 'block'; regView.style.display = 'none'; };
-    document.getElementById('register-btn').onclick = () => { modal.style.display = 'block'; loginView.style.display = 'none'; regView.style.display = 'block'; };
-    document.getElementById('go-to-reg').onclick = () => { loginView.style.display = 'none'; regView.style.display = 'block'; };
-    document.getElementById('go-to-login').onclick = () => { regView.style.display = 'none'; loginView.style.display = 'block'; };
-    document.querySelector('.close-modal').onclick = () => { modal.style.display = 'none'; };
-
-    // Forms
-    document.getElementById('login-form').onsubmit = (e) => {
-        e.preventDefault();
-        login(document.getElementById('login-username').value, document.getElementById('login-password').value);
-    };
-    document.getElementById('register-form').onsubmit = (e) => {
-        e.preventDefault();
-        register(document.getElementById('reg-username').value, document.getElementById('reg-email').value, document.getElementById('reg-password').value);
-    };
-
-    document.getElementById('search-btn').onclick = searchNearby;
+    if (typeof google !== 'undefined' && google.maps) initMap();
 });
 
 let searchInProgress = false;
@@ -168,6 +175,7 @@ function clearMarkers() {
 
 function showSearchResults(places) {
     const list = document.getElementById('search-results-list');
+    if (!list) return;
     if (!places.length) {
         list.innerHTML = '<li class="empty">No spots found. Try a different search.</li>';
         return;
@@ -233,8 +241,9 @@ async function showPlaceDetails(placeId) {
 }
 
 function escapeHtml(text) {
+    if (text == null || text === undefined) return '';
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = String(text);
     return div.innerHTML;
 }
 
@@ -278,6 +287,9 @@ async function loadFavourites() {
     list.innerHTML = favs.map(f => {
         const pid = escapeHtml(f.place_id);
         const name = escapeHtml(f.place_name);
-        return `<li data-place-id="${pid}" onclick="showPlaceDetails(this.dataset.placeId)">${name}</li>`;
+        return `<li class="fav-item" data-place-id="${pid}">${name}</li>`;
     }).join('');
+    list.querySelectorAll('.fav-item').forEach(li => {
+        li.onclick = () => showPlaceDetails(li.dataset.placeId);
+    });
 }
