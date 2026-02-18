@@ -1,20 +1,27 @@
 let map, markers = [];
 let currentToken = localStorage.getItem('token');
+let userPosition = null;
+let selectedPlace = null;
 
 function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
-        center: {lat: 40.7128, lng: -74.0060},
+        center: { lat: 40.7128, lng: -74.0060 },
         zoom: 12
     });
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(p => {
-            map.setCenter({lat: p.coords.latitude, lng: p.coords.longitude});
-        });
+        navigator.geolocation.getCurrentPosition(
+            p => {
+                userPosition = { lat: p.coords.latitude, lng: p.coords.longitude };
+                map.setCenter(userPosition);
+            },
+            () => console.warn('Geolocation denied or unavailable')
+        );
     }
 }
 
 async function apiFetch(url, options = {}) {
-    const headers = { 'Authorization': `Bearer ${currentToken}`, ...options.headers };
+    const headers = { ...options.headers };
+    if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
     if (options.body && !(options.body instanceof URLSearchParams)) {
         headers['Content-Type'] = 'application/json';
     }
@@ -97,4 +104,123 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('search-btn').onclick = searchNearby;
 });
 
-// Include searchNearby, showPlaceDetails, etc. using apiFetch helper
+async function searchNearby() {
+    const spotType = document.getElementById('spot-type').value;
+    const cuisine = document.getElementById('cuisine').value.trim() || null;
+    let lat, lng;
+
+    if (userPosition) {
+        lat = userPosition.lat;
+        lng = userPosition.lng;
+    } else if (navigator.geolocation) {
+        try {
+            const pos = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+            userPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            map.setCenter(userPosition);
+            lat = userPosition.lat;
+            lng = userPosition.lng;
+        } catch {
+            alert('Please allow location access to find spots nearby.');
+            return;
+        }
+    } else {
+        alert('Location is required. Your browser does not support geolocation.');
+        return;
+    }
+
+    const params = new URLSearchParams({ lat, lng, spot_type: spotType });
+    if (cuisine) params.set('cuisine', cuisine);
+    const res = await fetch(`/map/nearby?${params}`);
+    if (!res.ok) {
+        alert('Search failed. Please try again.');
+        return;
+    }
+    const places = await res.json();
+    clearMarkers();
+    places.forEach(p => addMarker(p));
+}
+
+function clearMarkers() {
+    markers.forEach(m => m.setMap(null));
+    markers = [];
+}
+
+function addMarker(place) {
+    const marker = new google.maps.Marker({
+        position: { lat: place.lat, lng: place.lng },
+        map,
+        title: place.name
+    });
+    marker.addListener('click', () => showPlaceDetails(place.place_id));
+    markers.push(marker);
+}
+
+async function showPlaceDetails(placeId) {
+    const res = await fetch(`/map/place-details/${placeId}`);
+    if (!res.ok) return;
+    const place = await res.json();
+    selectedPlace = place;
+
+    const detailsEl = document.getElementById('place-details');
+    const rating = place.rating != null ? `★ ${place.rating}` : '';
+    const price = place.price_level != null ? '₽'.repeat(place.price_level) : '';
+    detailsEl.innerHTML = `
+        <h4>${escapeHtml(place.name)}</h4>
+        <p>${escapeHtml(place.address || '')}</p>
+        <p>${rating} ${price}</p>
+        <button class="nav-btn" onclick="openNavigation()">Navigate</button>
+        ${currentToken ? `<button class="fav-btn" onclick="addToFavourites()">❤ Add to Favourites</button>` : ''}
+    `;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function openNavigation() {
+    if (!selectedPlace?.lat || !selectedPlace?.lng) return;
+    const dest = `${selectedPlace.lat},${selectedPlace.lng}`;
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`, '_blank');
+}
+
+async function addToFavourites() {
+    if (!currentToken || !selectedPlace) return;
+    const res = await apiFetch('/favourites/add', {
+        method: 'POST',
+        body: JSON.stringify({
+            place_id: selectedPlace.place_id,
+            place_name: selectedPlace.name,
+            place_address: selectedPlace.address || '',
+            place_rating: selectedPlace.rating,
+            place_price_level: selectedPlace.price_level || 0
+        })
+    });
+    if (res.ok) {
+        loadFavourites();
+        alert('Added to favourites!');
+    } else {
+        const err = await res.json();
+        alert(err.detail || 'Failed to add favourite');
+    }
+}
+
+async function loadFavourites() {
+    if (!currentToken) return;
+    const res = await apiFetch('/favourites');
+    if (!res.ok) return;
+    const favs = await res.json();
+    const list = document.getElementById('favourites-list');
+    if (!favs.length) {
+        list.innerHTML = '<li class="empty">No favourites yet</li>';
+        return;
+    }
+    list.innerHTML = favs.map(f => {
+        const pid = escapeHtml(f.place_id);
+        const name = escapeHtml(f.place_name);
+        return `<li data-place-id="${pid}" onclick="showPlaceDetails(this.dataset.placeId)">${name}</li>`;
+    }).join('');
+}

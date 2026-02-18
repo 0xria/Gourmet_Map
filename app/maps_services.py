@@ -1,13 +1,12 @@
 import googlemaps
 import os
 from fastapi import APIRouter, Depends, Query
-from app.api.auth import get_current_user
 
 gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
 router = APIRouter(prefix="/map", tags=["map"])
 
 @router.get("/nearby")
-async def get_nearby(lat: float, lng: float, spot_type: str = "restaurant", cuisine: str = None, current_user=Depends(get_current_user)):
+async def get_nearby(lat: float, lng: float, spot_type: str = "restaurant", cuisine: str = None):
     # Use spot_type for type, cuisine as keyword
     places_result = gmaps.places_nearby(
         location=(lat, lng),
@@ -31,7 +30,7 @@ async def get_nearby(lat: float, lng: float, spot_type: str = "restaurant", cuis
     return results
 
 @router.get("/place-details/{place_id}")
-async def get_place_details(place_id: str, current_user=Depends(get_current_user)):
+async def get_place_details(place_id: str):
     place_details = gmaps.place(place_id=place_id, fields=['name', 'formatted_address', 'rating', 'price_level', 'geometry'])
 
     result = place_details.get('result', {})

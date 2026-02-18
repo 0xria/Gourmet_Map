@@ -143,6 +143,43 @@ header {
     border-radius: 4px;
 }
 
+.nav-btn, .fav-btn {
+    display: inline-block;
+    margin: 8px 8px 8px 0;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.nav-btn {
+    background: #007bff;
+    color: white;
+}
+
+.nav-btn:hover {
+    background: #0056b3;
+}
+
+.fav-btn {
+    background: #ff4d4d;
+    color: white;
+}
+
+.fav-btn:hover {
+    background: #e63939;
+}
+
+#favourites-list .empty {
+    color: #888;
+    cursor: default;
+}
+
+#favourites-list .empty:hover {
+    background: transparent;
+}
+
 #favourites-tab h3 {
     margin-top: 20px;
 }

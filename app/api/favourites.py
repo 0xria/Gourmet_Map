@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
-from requests import Session
+from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
 from app.database import get_db
 from app.models import Favourite, User
 
-router = APIRouter()
+router = APIRouter(prefix="/favourites", tags=["favourites"])
 
 class FavSchema(BaseModel):
     place_id: str
@@ -16,6 +16,20 @@ class FavSchema(BaseModel):
     place_address: str
     place_rating: Optional[float] = 0.0
     place_price_level: Optional[int] = 0
+
+@router.get("")
+async def list_favourites(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    favs = db.query(Favourite).filter(Favourite.user_id == user.id).all()
+    return [
+        {
+            "place_id": f.place_id,
+            "place_name": f.place_name,
+            "place_address": f.place_address,
+            "place_rating": f.place_rating,
+            "place_price_level": f.place_price_level,
+        }
+        for f in favs
+    ]
 
 @router.post("/add")
 async def add_fav(data: FavSchema, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
