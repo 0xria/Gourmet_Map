@@ -7,23 +7,19 @@ router = APIRouter(prefix="/map", tags=["map"])
 
 @router.get("/nearby")
 async def get_nearby(lat: float, lng: float, spot_type: str = "restaurant", cuisine: str = None):
-    # Use Text Search (more flexible than Nearby) - better results
-    query = f"{cuisine} {spot_type}s".strip() if cuisine else f"{spot_type}s"
-    places_result = gmaps.places(
-        query=query,
-        location=(lat, lng),
-        radius=5000,
-        type=spot_type
-    )
+    # When user types something (cuisine or name like "nandos"), use it as primary search
+    if cuisine:
+        query = f"{cuisine} {spot_type}"  # "nandos restaurant" - prioritizes their search
+        kwargs = {"query": query, "location": (lat, lng), "radius": 5000}
+        # Skip type filter for specific names - avoids over-restricting
+    else:
+        query = f"{spot_type}s"
+        kwargs = {"query": query, "location": (lat, lng), "radius": 5000, "type": spot_type}
+
+    places_result = gmaps.places(**kwargs)
     results = _extract_places(places_result)
-    # If cuisine filter returned nothing, retry without it
     if not results and cuisine:
-        places_result = gmaps.places(
-            query=f"{spot_type}s",
-            location=(lat, lng),
-            radius=5000,
-            type=spot_type
-        )
+        places_result = gmaps.places(query=f"{spot_type}s", location=(lat, lng), radius=5000, type=spot_type)
         results = _extract_places(places_result)
     return results
 

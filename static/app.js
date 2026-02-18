@@ -1,4 +1,5 @@
 let map, markers = [];
+let lastSearchPlaces = [];
 let currentToken = localStorage.getItem('token');
 let userPosition = null;
 let selectedPlace = null;
@@ -104,47 +105,103 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('search-btn').onclick = searchNearby;
 });
 
-async function searchNearby() {
-    const spotType = document.getElementById('spot-type').value;
-    const cuisine = document.getElementById('cuisine').value.trim() || null;
-    let lat, lng;
+let searchInProgress = false;
 
-    if (userPosition) {
-        lat = userPosition.lat;
-        lng = userPosition.lng;
-    } else if (navigator.geolocation) {
-        try {
-            const pos = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject);
-            });
-            userPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            map.setCenter(userPosition);
+async function searchNearby() {
+    if (searchInProgress) return;
+    searchInProgress = true;
+    const btn = document.getElementById('search-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Searching...';
+
+    try {
+        const spotType = document.getElementById('spot-type').value;
+        const cuisine = document.getElementById('cuisine').value.trim() || null;
+        let lat, lng;
+
+        if (userPosition) {
             lat = userPosition.lat;
             lng = userPosition.lng;
-        } catch {
-            alert('Please allow location access to find spots nearby.');
+        } else if (navigator.geolocation) {
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject);
+                });
+                userPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                map.setCenter(userPosition);
+                lat = userPosition.lat;
+                lng = userPosition.lng;
+            } catch {
+                alert('Please allow location access to find spots nearby.');
+                return;
+            }
+        } else {
+            alert('Location is required. Your browser does not support geolocation.');
             return;
         }
-    } else {
-        alert('Location is required. Your browser does not support geolocation.');
-        return;
-    }
 
-    const params = new URLSearchParams({ lat, lng, spot_type: spotType });
-    if (cuisine) params.set('cuisine', cuisine);
-    const res = await fetch(`/map/nearby?${params}`);
-    if (!res.ok) {
-        alert('Search failed. Please try again.');
-        return;
+        const params = new URLSearchParams({ lat, lng, spot_type: spotType });
+        if (cuisine) params.set('cuisine', cuisine);
+        const res = await fetch(`/map/nearby?${params}`);
+        if (!res.ok) {
+            alert('Search failed. Please try again.');
+            return;
+        }
+        const places = await res.json();
+        lastSearchPlaces = places;
+        clearMarkers();
+        places.forEach(p => addMarker(p));
+        showSearchResults(places);
+        fitMapToMarkers();
+    } finally {
+        searchInProgress = false;
+        btn.disabled = false;
+        btn.textContent = originalText;
     }
-    const places = await res.json();
-    clearMarkers();
-    places.forEach(p => addMarker(p));
 }
 
 function clearMarkers() {
     markers.forEach(m => m.setMap(null));
     markers = [];
+}
+
+function showSearchResults(places) {
+    const list = document.getElementById('search-results-list');
+    if (!places.length) {
+        list.innerHTML = '<li class="empty">No spots found. Try a different search.</li>';
+        return;
+    }
+    list.innerHTML = places.map(p => {
+        const name = escapeHtml(p.name);
+        const rating = p.rating != null ? ` ★ ${p.rating}` : '';
+        const pid = escapeHtml(p.place_id);
+        return `<li class="search-result-item" data-place-id="${pid}">${name}${rating}</li>`;
+    }).join('');
+    list.querySelectorAll('.search-result-item').forEach(li => {
+        li.onclick = () => selectSearchResult(li.dataset.placeId);
+    });
+}
+
+function selectSearchResult(placeId) {
+    showPlaceDetails(placeId);
+    const place = lastSearchPlaces?.find(p => p.place_id === placeId);
+    if (place && map) {
+        map.panTo({ lat: place.lat, lng: place.lng });
+        map.setZoom(16);
+    }
+}
+
+function fitMapToMarkers() {
+    if (!markers.length) return;
+    if (markers.length === 1) {
+        map.panTo(markers[0].getPosition());
+        map.setZoom(15);
+    } else {
+        const bounds = new google.maps.LatLngBounds();
+        markers.forEach(m => bounds.extend(m.getPosition()));
+        map.fitBounds(bounds, 50);
+    }
 }
 
 function addMarker(place) {

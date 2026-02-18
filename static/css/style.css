@@ -133,6 +133,32 @@ header {
     background: #218838;
 }
 
+#search-results-container {
+    margin-top: 20px;
+}
+
+#search-results-list {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#search-results-list li {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+#search-results-list li:hover {
+    background: #f8f9fa;
+}
+
+#search-results-list .empty {
+    color: #888;
+    cursor: default;
+}
+
 #place-details-container {
     margin-top: 20px;
 }
