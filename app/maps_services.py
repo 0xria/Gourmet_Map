@@ -1,20 +1,33 @@
 import googlemaps
 import os
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter
 
 gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
 router = APIRouter(prefix="/map", tags=["map"])
 
 @router.get("/nearby")
 async def get_nearby(lat: float, lng: float, spot_type: str = "restaurant", cuisine: str = None):
-    # Use spot_type for type, cuisine as keyword
-    places_result = gmaps.places_nearby(
+    # Use Text Search (more flexible than Nearby) - better results
+    query = f"{cuisine} {spot_type}s".strip() if cuisine else f"{spot_type}s"
+    places_result = gmaps.places(
+        query=query,
         location=(lat, lng),
-        radius=2000,
-        type=spot_type,
-        keyword=cuisine
+        radius=5000,
+        type=spot_type
     )
+    results = _extract_places(places_result)
+    # If cuisine filter returned nothing, retry without it
+    if not results and cuisine:
+        places_result = gmaps.places(
+            query=f"{spot_type}s",
+            location=(lat, lng),
+            radius=5000,
+            type=spot_type
+        )
+        results = _extract_places(places_result)
+    return results
 
+def _extract_places(places_result):
     results = []
     for p in places_result.get('results', []):
         loc = p.get("geometry", {}).get("location", {})
